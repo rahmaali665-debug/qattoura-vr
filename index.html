@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>رحلة قطّورة</title>
+  <meta name="description" content="بيئة واقع افتراضي: التبخر والتكثف في دورة الماء، للصف الثالث الابتدائي">
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <style>
+    body { margin: 0; background: #8fd3ff; font-family: Tahoma, "Segoe UI", Arial, sans-serif; }
+    #start {
+      position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center; padding: 24px;
+      background: linear-gradient(#8fd3ff, #1f7fc4); color: #fff;
+    }
+    #start h1 { font-size: 2.4rem; margin: 0 0 8px; }
+    #start p { font-size: 1.1rem; max-width: 34rem; line-height: 1.9; margin: 6px 0; }
+    #start button {
+      margin-top: 22px; font: inherit; font-size: 1.3rem; font-weight: bold; color: #1f5f99;
+      background: #fff; border: 0; border-radius: 999px; padding: 14px 40px; cursor: pointer;
+    }
+    #start small { margin-top: 18px; opacity: .85; }
+  </style>
+</head>
+<body>
+
+<div id="start">
+  <h1>رحلة قطّورة</h1>
+  <p>رحلة بالواقع الافتراضي مع قطرة ماء في مرحلتين من دورة الماء: التبخر ثم التكثف.</p>
+  <p>حرّك الجهاز أو اسحب بإصبعك لتنظر حولك، واضغط على الأشياء المضيئة.</p>
+  <button id="startBtn" type="button">ابدأ الرحلة</button>
+  <small>للنظارة: اضغط زر VR أسفل الشاشة بعد البدء، ثم ثبّت نظرك على الشيء لتختاره.</small>
+</div>
+
+<script>
+/* ---------- Arabic text on a canvas texture (A-Frame's built-in text cannot shape Arabic) ---------- */
+AFRAME.registerComponent('ar-text', {
+  schema: {
+    value:   { type: 'string', default: '' },
+    title:   { type: 'string', default: '' },
+    width:   { type: 'number', default: 3 },
+    size:    { type: 'number', default: 54 },
+    color:   { type: 'string', default: '#12324d' },
+    accent:  { type: 'string', default: '#0b6fb8' },
+    bg:      { type: 'string', default: 'rgba(255,255,255,0.94)' },
+    border:  { type: 'string', default: '' }
+  },
+  update: function () {
+    var d = this.data, W = 1024, pad = 56, font = 'Tahoma, "Segoe UI", Arial, sans-serif';
+    var c = document.createElement('canvas'), ctx = c.getContext('2d');
+    var lineH = Math.round(d.size * 1.55), titleSize = Math.round(d.size * 1.2), titleH = Math.round(titleSize * 1.7);
+    ctx.font = 'bold ' + d.size + 'px ' + font;
+    var lines = [];
+    d.value.split('|').forEach(function (para) {
+      var words = para.trim().split(/\s+/), cur = '';
+      words.forEach(function (w) {
+        var t = cur ? cur + ' ' + w : w;
+        if (ctx.measureText(t).width > W - pad * 2 && cur) { lines.push(cur); cur = w; } else { cur = t; }
+      });
+      lines.push(cur);
+    });
+    var H = pad * 2 + lines.length * lineH + (d.title ? titleH : 0);
+    c.width = W; c.height = H;
+    var r = 46;
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(W - r, 0); ctx.quadraticCurveTo(W, 0, W, r);
+    ctx.lineTo(W, H - r); ctx.quadraticCurveTo(W, H, W - r, H);
+    ctx.lineTo(r, H); ctx.quadraticCurveTo(0, H, 0, H - r);
+    ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0); ctx.closePath();
+    ctx.fillStyle = d.bg; ctx.fill();
+    if (d.border) { ctx.lineWidth = 12; ctx.strokeStyle = d.border; ctx.stroke(); }
+    ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    var y = pad;
+    if (d.title) {
+      ctx.font = 'bold ' + titleSize + 'px ' + font; ctx.fillStyle = d.accent;
+      ctx.fillText(d.title, W / 2, y + titleH / 2 - 8); y += titleH;
+    }
+    ctx.font = 'bold ' + d.size + 'px ' + font; ctx.fillStyle = d.color;
+    lines.forEach(function (l) { ctx.fillText(l, W / 2, y + lineH / 2); y += lineH; });
+    var tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = 8;
+    if (THREE.SRGBColorSpace) { tex.colorSpace = THREE.SRGBColorSpace; }
+    var h = d.width * H / W;
+    var old = this.el.getObject3D('mesh');
+    if (old) { old.geometry.dispose(); old.material.map.dispose(); old.material.dispose(); }
+    var mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(d.width, h),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide })
+    );
+    this.el.setObject3D('mesh', mesh);
+  },
+  remove: function () { this.el.removeObject3D('mesh'); }
+});
+
+/* ---------- Small helpers ---------- */
+function $(id) { return document.getElementById(id); }
+function show(el, on) { el.setAttribute('visible', on); el.object3D.visible = on; }
+function fade(el, to, dur) {
+  var parts = [el].concat(Array.prototype.slice.call(el.querySelectorAll('[material]')));
+  parts.forEach(function (p) {
+    if (!p.hasAttribute('material') && !p.hasAttribute('color')) { return; }
+    p.setAttribute('material', 'transparent', true);
+    p.setAttribute('animation__fade', { property: 'material.opacity', to: to, dur: dur, easing: 'easeInOutQuad' });
+  });
+}
+function glow(el, on) {
+  if (on) {
+    el.setAttribute('animation__glow', { property: 'scale', from: '1 1 1', to: '1.18 1.18 1.18', dur: 700, dir: 'alternate', loop: true, easing: 'easeInOutSine' });
+  } else {
+    el.removeAttribute('animation__glow'); el.setAttribute('scale', '1 1 1');
+  }
+}
+
+/* ---------- The journey ---------- */
+AFRAME.registerComponent('journey', {
+  init: function () {
+    var self = this; this.step = 0;
+    this.el.addEventListener('loaded', function () { self.setup(); });
+  },
+  setup: function () {
+    var self = this;
+    function on(id, fn) { $(id).addEventListener('click', function () { fn.call(self); }); }
+    on('drop', this.meetDrop);
+    on('sun', this.heat);
+    on('btnUp', this.rise);
+    on('cold', this.cool);
+    on('btnCompare', this.compare);
+    on('btnAgain', function () { window.location.reload(); });
+    // Group entities have no mesh of their own, so make their parts the ray targets.
+    ['drop', 'sun', 'cold'].forEach(function (id) {
+      Array.prototype.forEach.call($(id).querySelectorAll('*'), function (c) { c.classList.add('clickable'); });
+    });
+    var gaze = $('gaze'), scene = this.el;
+    function refresh() {
+      scene.components.raycaster.refreshObjects();
+      gaze.components.raycaster.refreshObjects();
+    }
+    // The gaze cursor is only for headsets; on tablets and computers the pupil taps or clicks.
+    scene.addEventListener('enter-vr', function () { gaze.setAttribute('raycaster', 'enabled', true); show(gaze, true); refresh(); });
+    scene.addEventListener('exit-vr', function () { gaze.setAttribute('raycaster', 'enabled', false); show(gaze, false); });
+    this.refresh = refresh;
+    setTimeout(refresh, 300);
+    glow($('drop'), true);
+  },
+  say: function (id, title, text) {
+    var el = $(id);
+    el.setAttribute('ar-text', { title: title, value: text });
+    show(el, true);
+    if (this.refresh) { setTimeout(this.refresh, 50); }
+  },
+  meetDrop: function () {
+    if (this.step !== 0) { return; }
+    this.step = 1;
+    glow($('drop'), false);
+    this.say('talk1', 'قطّورة تقول:', 'مرحبًا! أنا قطّورة، قطرة ماء سائلة في البحر.|الشمس فوقي تسخّن ماء البحر.');
+    this.say('hint1', '', 'اضغط على الشمس');
+    glow($('sun'), true);
+  },
+  heat: function () {
+    if (this.step !== 1) { return; }
+    this.step = 2;
+    var self = this;
+    glow($('sun'), false);
+    show($('hint1'), false);
+    $('sunRays').setAttribute('animation', { property: 'rotation', to: '0 0 360', dur: 5000, loop: true, easing: 'linear' });
+    $('sunRays').setAttribute('animation__s', { property: 'scale', to: '1.5 1.5 1.5', dur: 1200, easing: 'easeOutQuad' });
+    fade($('drop'), 0.08, 2600);
+    $('drop').setAttribute('animation__up', { property: 'position', to: '0 3.2 -4', dur: 3200, easing: 'easeInQuad' });
+    this.vapour($('vapour1'), 16, 3.5);
+    this.say('talk1', 'قطّورة تقول:', 'الشمس سخّنتني!|تحوّلتُ من سائل إلى بخار ماء لا يُرى، وبدأتُ أصعد إلى أعلى.');
+    setTimeout(function () {
+      self.say('board1', 'المرحلة الأولى: التبخر', 'المكان: سطح البحر|الحالة: من سائل إلى بخار ماء|السبب: حرارة الشمس (تسخين)');
+      show($('btnUp'), true); glow($('btnUp'), true);
+    }, 3200);
+  },
+  rise: function () {
+    if (this.step !== 2) { return; }
+    this.step = 3;
+    var self = this;
+    glow($('btnUp'), false);
+    show($('btnUp'), false); show($('talk1'), false);
+    $('rig').setAttribute('animation', { property: 'position', to: '0 60 0', dur: 6000, easing: 'easeInOutQuad' });
+    $('sky').setAttribute('animation', { property: 'material.color', type: 'color', to: '#a9c9ee', dur: 6000 });
+    setTimeout(function () {
+      self.vapour($('vapour2'), 14, 1.2);
+      self.say('talk2', 'قطّورة تقول:', 'أنا الآن بخار ماء في الأعلى.|الهواء هنا بارد جدًّا! انظر إلى أسفل: هذا البحر الذي جئتُ منه.');
+      self.say('hint2', '', 'اضغط على الهواء البارد');
+      glow($('cold'), true);
+    }, 6200);
+  },
+  cool: function () {
+    if (this.step !== 3) { return; }
+    this.step = 4;
+    var self = this;
+    glow($('cold'), false);
+    show($('hint2'), false);
+    $('vapour2').setAttribute('visible', false);
+    var friends = $('friends');
+    show(friends, true);
+    Array.prototype.forEach.call(friends.children, function (f, i) {
+      var to = f.getAttribute('data-to');
+      f.setAttribute('animation', { property: 'position', to: to, dur: 2400, delay: i * 180, easing: 'easeOutQuad' });
+    });
+    var cloud = $('cloud');
+    show(cloud, true);
+    Array.prototype.forEach.call(cloud.children, function (p, i) {
+      p.setAttribute('material', 'opacity', 0);
+      p.setAttribute('animation', { property: 'material.opacity', to: 0.93, dur: 1800, delay: 2000 + i * 120, easing: 'easeInQuad' });
+    });
+    this.say('talk2', 'قطّورة تقول:', 'بردتُ فتحوّلتُ من بخار ماء إلى قطرة ماء سائلة!|وتجمّعتُ مع صديقاتي فشكّلنا غيمة.');
+    setTimeout(function () {
+      self.say('board2', 'المرحلة الثانية: التكثف', 'المكان: في الأعلى|الحالة: من بخار ماء إلى سائل|السبب: برودة الهواء (تبريد)');
+      show($('btnCompare'), true); glow($('btnCompare'), true);
+    }, 3600);
+  },
+  compare: function () {
+    if (this.step !== 4) { return; }
+    this.step = 5;
+    glow($('btnCompare'), false);
+    show($('btnCompare'), false); show($('talk2'), false);
+    $('board2').setAttribute('rotation', '0 26 0');
+    $('board2').setAttribute('animation', { property: 'position', to: '-2.9 2.5 -4.4', dur: 900, easing: 'easeInOutQuad' });
+    show($('cold'), false);
+    this.say('board1b', 'المرحلة الأولى: التبخر', 'المكان: سطح البحر|الحالة: من سائل إلى بخار ماء|السبب: حرارة الشمس (تسخين)');
+    this.say('question', 'والآن قارن مع مجموعتك', 'ما أوجه التشابه بين التبخر والتكثف؟|وما أوجه الاختلاف بينهما؟');
+    show($('btnAgain'), true);
+  },
+  vapour: function (holder, n, height) {
+    show(holder, true);
+    for (var i = 0; i < n; i++) {
+      var p = document.createElement('a-sphere');
+      var x = (Math.random() - 0.5) * 2.2, z = (Math.random() - 0.5) * 1.4, y0 = Math.random() * 0.6;
+      p.setAttribute('radius', 0.07 + Math.random() * 0.06);
+      p.setAttribute('position', x + ' ' + y0 + ' ' + z);
+      p.setAttribute('material', { color: '#ffffff', opacity: 0.16, transparent: true, shader: 'flat' });
+      p.setAttribute('animation', {
+        property: 'position', to: (x * 1.4) + ' ' + (y0 + height) + ' ' + z,
+        dur: 2600 + Math.random() * 2200, delay: Math.random() * 1500, loop: true, easing: 'linear'
+      });
+      holder.appendChild(p);
+    }
+  }
+});
+</script>
+
+<a-scene journey
+         renderer="antialias: true; colorManagement: true"
+         cursor="rayOrigin: mouse" raycaster="objects: .clickable"
+         device-orientation-permission-ui="enabled: true"
+         vr-mode-ui="enabled: true">
+
+  <!-- Viewer -->
+  <a-entity id="rig" position="0 0 0">
+    <a-camera id="cam" position="0 1.6 0" wasd-controls-enabled="false" look-controls="pointerLockEnabled: false">
+      <a-entity id="gaze" visible="false" cursor="fuse: true; fuseTimeout: 1600" raycaster="objects: .clickable; far: 60; enabled: false"
+                position="0 0 -1" geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.02"
+                material="color: #ffffff; shader: flat; opacity: 0.85"
+                animation__fusing="property: scale; startEvents: fusing; from: 1 1 1; to: 0.3 0.3 0.3; dur: 1600; easing: linear"
+                animation__reset="property: scale; startEvents: mouseleave, click; to: 1 1 1; dur: 150"></a-entity>
+    </a-camera>
+  </a-entity>
+
+  <!-- World -->
+  <a-sky id="sky" color="#8fd3ff"></a-sky>
+  <a-entity light="type: ambient; intensity: 0.85; color: #ffffff"></a-entity>
+  <a-entity light="type: directional; intensity: 0.8; color: #fff4d6" position="6 10 -6"></a-entity>
+
+  <a-plane id="sea" rotation="-90 0 0" width="900" height="900" color="#1f7fc4" position="0 0 0"
+           animation="property: position; to: 0 0.08 0; dur: 2600; dir: alternate; loop: true; easing: easeInOutSine"></a-plane>
+  <a-circle rotation="-90 0 0" radius="26" color="#2a8fd6" position="0 0.02 -8" material="opacity: 0.55; transparent: true"></a-circle>
+
+  <!-- Distant land, so clouds are also seen over land -->
+  <a-entity position="-70 0 -120">
+    <a-cylinder radius="60" height="1.2" color="#e3c98a" position="0 0.4 0"></a-cylinder>
+    <a-cone radius-bottom="26" radius-top="2" height="26" color="#8a9a6b" position="-10 13 -10"></a-cone>
+    <a-cone radius-bottom="18" radius-top="1" height="16" color="#9aa878" position="18 8 6"></a-cone>
+  </a-entity>
+  <a-entity position="-60 42 -110">
+    <a-sphere radius="9" color="#ffffff" position="0 0 0"></a-sphere>
+    <a-sphere radius="7" color="#ffffff" position="9 -1 2"></a-sphere>
+    <a-sphere radius="6" color="#ffffff" position="-8 -1 1"></a-sphere>
+  </a-entity>
+
+  <!-- ================= Stage 1: sea surface, evaporation ================= -->
+  <a-entity id="stage1">
+
+    <!-- The sun -->
+    <a-entity id="sun" class="clickable" position="4.6 6.2 -9">
+      <a-sphere radius="1.1" material="color: #ffd23f; shader: flat"></a-sphere>
+      <a-entity id="sunRays">
+        <a-box width="3.6" height="0.14" depth="0.14" material="color: #ffb400; shader: flat"></a-box>
+        <a-box width="3.6" height="0.14" depth="0.14" rotation="0 0 45" material="color: #ffb400; shader: flat"></a-box>
+        <a-box width="3.6" height="0.14" depth="0.14" rotation="0 0 90" material="color: #ffb400; shader: flat"></a-box>
+        <a-box width="3.6" height="0.14" depth="0.14" rotation="0 0 135" material="color: #ffb400; shader: flat"></a-box>
+      </a-entity>
+    </a-entity>
+    <a-entity id="hint1" visible="false" position="4.6 4.1 -9" ar-text="width: 3.8; size: 84; bg: rgba(255,210,63,0.96); color: #5a3d00"></a-entity>
+
+    <!-- Qattoura, the water drop -->
+    <a-entity id="drop" class="clickable" position="0 0.75 -4"
+              animation__bob="property: rotation; from: 0 -8 -4; to: 0 8 4; dur: 1800; dir: alternate; loop: true; easing: easeInOutSine">
+      <a-sphere radius="0.5" color="#4fb6ff" material="roughness: 0.25; metalness: 0.05"></a-sphere>
+      <a-cone radius-bottom="0.43" radius-top="0.01" height="0.8" position="0 0.62 0" color="#4fb6ff" material="roughness: 0.25"></a-cone>
+      <a-sphere radius="0.11" color="#ffffff" position="-0.17 0.1 0.43"></a-sphere>
+      <a-sphere radius="0.11" color="#ffffff" position="0.17 0.1 0.43"></a-sphere>
+      <a-sphere radius="0.05" color="#10243a" position="-0.17 0.1 0.52"></a-sphere>
+      <a-sphere radius="0.05" color="#10243a" position="0.17 0.1 0.52"></a-sphere>
+      <a-torus radius="0.14" radius-tubular="0.02" arc="180" rotation="0 0 180" position="0 -0.1 0.47" color="#10243a"></a-torus>
+    </a-entity>
+    <a-entity id="vapour1" visible="false" position="0 1.2 -4"></a-entity>
+
+    <a-entity id="talk1" visible="false" position="-2.7 2.3 -4.6" rotation="0 24 0"
+              ar-text="width: 3.3; size: 58; border: #4fb6ff"></a-entity>
+    <a-entity id="board1" visible="false" position="2.7 2.3 -4.6" rotation="0 -24 0"
+              ar-text="width: 3.3; size: 58; bg: rgba(255,246,214,0.97); border: #ffb400; accent: #b36b00"></a-entity>
+    <a-entity id="btnUp" class="clickable" visible="false" position="0 1.05 -3.4"
+              ar-text="value: اصعد مع بخار الماء ⬆; width: 2.8; size: 64; bg: rgba(11,111,184,0.97); color: #ffffff"></a-entity>
+  </a-entity>
+
+  <!-- ================= Stage 2: high in the sky, condensation ================= -->
+  <a-entity id="stage2" position="0 60 0">
+
+    <!-- Cold air -->
+    <a-entity id="cold" class="clickable" position="0 5.2 -8">
+      <a-icosahedron radius="0.95" material="color: #bfe9ff; shader: flat; opacity: 0.9; transparent: true"
+                     animation="property: rotation; to: 0 360 0; dur: 9000; loop: true; easing: linear"></a-icosahedron>
+      <a-box width="2.6" height="0.1" depth="0.1" material="color: #ffffff; shader: flat"></a-box>
+      <a-box width="2.6" height="0.1" depth="0.1" rotation="0 0 60" material="color: #ffffff; shader: flat"></a-box>
+      <a-box width="2.6" height="0.1" depth="0.1" rotation="0 0 120" material="color: #ffffff; shader: flat"></a-box>
+    </a-entity>
+    <a-entity id="hint2" visible="false" position="0 3.5 -8" ar-text="width: 4.6; size: 84; bg: rgba(191,233,255,0.97); color: #0b3d63"></a-entity>
+
+    <a-entity id="vapour2" visible="false" position="0 1.3 -4"></a-entity>
+
+    <!-- Drops that appear when the vapour cools -->
+    <a-entity id="friends" visible="false">
+      <a-entity position="-5 4 -6" data-to="-0.9 1.7 -4">
+        <a-sphere radius="0.3" color="#4fb6ff"></a-sphere>
+        <a-cone radius-bottom="0.26" radius-top="0.01" height="0.5" position="0 0.38 0" color="#4fb6ff"></a-cone>
+      </a-entity>
+      <a-entity position="5 4.5 -6" data-to="0.9 1.7 -4">
+        <a-sphere radius="0.3" color="#4fb6ff"></a-sphere>
+        <a-cone radius-bottom="0.26" radius-top="0.01" height="0.5" position="0 0.38 0" color="#4fb6ff"></a-cone>
+      </a-entity>
+      <a-entity position="0 6 -7" data-to="0 1.8 -4">
+        <a-sphere radius="0.42" color="#4fb6ff"></a-sphere>
+        <a-cone radius-bottom="0.36" radius-top="0.01" height="0.68" position="0 0.52 0" color="#4fb6ff"></a-cone>
+        <a-sphere radius="0.09" color="#ffffff" position="-0.14 0.08 0.36"></a-sphere>
+        <a-sphere radius="0.09" color="#ffffff" position="0.14 0.08 0.36"></a-sphere>
+        <a-sphere radius="0.04" color="#10243a" position="-0.14 0.08 0.44"></a-sphere>
+        <a-sphere radius="0.04" color="#10243a" position="0.14 0.08 0.44"></a-sphere>
+        <a-torus radius="0.12" radius-tubular="0.018" arc="180" rotation="0 0 180" position="0 -0.08 0.4" color="#10243a"></a-torus>
+      </a-entity>
+      <a-entity position="-3 -1 -6" data-to="-0.45 1.25 -4">
+        <a-sphere radius="0.24" color="#4fb6ff"></a-sphere>
+        <a-cone radius-bottom="0.2" radius-top="0.01" height="0.4" position="0 0.3 0" color="#4fb6ff"></a-cone>
+      </a-entity>
+      <a-entity position="3 -1 -6" data-to="0.45 1.25 -4">
+        <a-sphere radius="0.24" color="#4fb6ff"></a-sphere>
+        <a-cone radius-bottom="0.2" radius-top="0.01" height="0.4" position="0 0.3 0" color="#4fb6ff"></a-cone>
+      </a-entity>
+    </a-entity>
+
+    <!-- The cloud that forms -->
+    <a-entity id="cloud" visible="false" position="0 1.5 -4.8">
+      <a-sphere radius="1.1" material="color: #ffffff; transparent: true; opacity: 0; shader: flat" position="0 0 0"></a-sphere>
+      <a-sphere radius="0.9" material="color: #ffffff; transparent: true; opacity: 0; shader: flat" position="1.2 -0.15 0.1"></a-sphere>
+      <a-sphere radius="0.85" material="color: #ffffff; transparent: true; opacity: 0; shader: flat" position="-1.2 -0.15 0.1"></a-sphere>
+      <a-sphere radius="0.7" material="color: #ffffff; transparent: true; opacity: 0; shader: flat" position="0.55 0.6 -0.1"></a-sphere>
+      <a-sphere radius="0.7" material="color: #ffffff; transparent: true; opacity: 0; shader: flat" position="-0.6 0.55 -0.1"></a-sphere>
+    </a-entity>
+
+    <!-- Other clouds around -->
+    <a-entity position="14 -2 -18"><a-sphere radius="3" color="#ffffff"></a-sphere><a-sphere radius="2.4" color="#ffffff" position="3 -0.4 0"></a-sphere><a-sphere radius="2.2" color="#ffffff" position="-3 -0.4 0"></a-sphere></a-entity>
+    <a-entity position="-16 1 -14"><a-sphere radius="2.6" color="#ffffff"></a-sphere><a-sphere radius="2" color="#ffffff" position="2.6 -0.3 0"></a-sphere><a-sphere radius="1.9" color="#ffffff" position="-2.5 -0.3 0"></a-sphere></a-entity>
+    <a-entity position="6 3 16"><a-sphere radius="3" color="#ffffff"></a-sphere><a-sphere radius="2.3" color="#ffffff" position="3 -0.4 0"></a-sphere></a-entity>
+
+    <a-entity id="talk2" visible="false" position="-2.8 2.5 -4.6" rotation="0 24 0"
+              ar-text="width: 3.3; size: 58; border: #4fb6ff"></a-entity>
+    <a-entity id="board2" visible="false" position="2.8 2.5 -4.6" rotation="0 -24 0"
+              ar-text="width: 3.3; size: 58; bg: rgba(223,242,255,0.97); border: #5aa9e6; accent: #0b5a99"></a-entity>
+    <a-entity id="board1b" visible="false" position="2.9 2.5 -4.4" rotation="0 -26 0"
+              ar-text="width: 3.3; size: 58; bg: rgba(255,246,214,0.97); border: #ffb400; accent: #b36b00"></a-entity>
+    <a-entity id="btnCompare" class="clickable" visible="false" position="0 3.9 -4.6"
+              ar-text="value: قارن بين المرحلتين; width: 2.8; size: 64; bg: rgba(11,111,184,0.97); color: #ffffff"></a-entity>
+    <a-entity id="question" visible="false" position="0 4.2 -4.4"
+              ar-text="width: 4.2; size: 56; bg: rgba(11,111,184,0.97); color: #ffffff; accent: #ffe08a"></a-entity>
+    <a-entity id="btnAgain" class="clickable" visible="false" position="0 0.45 -3.8"
+              ar-text="value: أعد الرحلة ↺; width: 2.2; size: 60; bg: rgba(255,255,255,0.96); color: #0b6fb8; border: #0b6fb8"></a-entity>
+  </a-entity>
+</a-scene>
+
+<script>
+  document.getElementById('startBtn').addEventListener('click', function () {
+    document.getElementById('start').style.display = 'none';
+    window.dispatchEvent(new Event('resize'));
+  });
+</script>
+</body>
+</html>

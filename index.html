@@ -39,28 +39,53 @@
     html, body { margin: 0; height: 100%; overflow: hidden; background: #6cc6ff; font-family: var(--font); font-weight: 600; }
 
     /* ---------- start screen ---------- */
-    #start { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 16px; color: #fff; overflow-y: auto;
-      background: linear-gradient(rgba(11, 61, 107, .35), rgba(11, 61, 107, .72)), url("env/portal-sea.jpg") center / cover no-repeat, #1b74bd; }
-    #start h1 { margin: 0; font-weight: 800; line-height: 1.2; text-shadow: 0 4px 0 rgba(11, 61, 107, .45); }
-    #start h1 .who { display: block; font-size: min(7vh, 3.2rem); }
-    #start h1 .what { display: block; font-size: min(8.5vh, 3.9rem, 11vw); color: var(--gold-light); }
-    #start .lead { margin: 1.5vh 0 0; font-size: min(3.4vh, 1.6rem); font-weight: 700; line-height: 1.6; max-width: 34rem; }
-    .how { display: grid; gap: 1.2vh; width: min(92vw, 480px); margin-top: 2.2vh; }
-    .how span { border-radius: 16px; padding: 0.8vh 12px; font-weight: 700; font-size: min(3.3vh, 1.5rem, 5.2vw); color: #fff;
-      border: 3px solid #fff; box-shadow: 0 4px 0 rgba(11, 61, 107, .3); line-height: 1.5; }
-    .how .c1 { background: linear-gradient(#46c57e, #2fae66); }
-    .how .c2 { background: linear-gradient(#a47ae8, #8a5cdb); }
-    #startBtn { font: inherit; font-size: min(4.2vh, 1.9rem, 6.4vw); font-weight: 800; color: #fff; cursor: pointer; margin-top: 3vh;
-      background: linear-gradient(var(--orange-light), var(--orange)); border: 4px solid #fff; border-radius: 999px; padding: 1.2vh 34px;
-      min-height: 56px; text-shadow: 0 2px 0 rgba(160, 70, 0, .45); animation: flash 1.1s ease-in-out infinite; }
+    #start { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 0 3vw;
+      text-align: center; color: #fff; overflow: hidden;
+      background: linear-gradient(90deg, rgba(9, 40, 80, .15) 0%, rgba(9, 40, 80, .55) 45%, rgba(9, 40, 80, .7) 100%),
+        url("ui/start-bg.jpg") center 62% / cover no-repeat, #1b74bd; }
+    #start .panel { position: relative; z-index: 2; width: min(50vw, 82vh); display: flex; flex-direction: column; align-items: center;
+      padding-bottom: 27vh; }
+    #start h1 { margin: 0; font-weight: 800; line-height: 1.15; text-shadow: 0 .6vh 0 rgba(4, 25, 55, .45); }
+    #start h1 .who { display: block; font-size: min(10.5vh, 7vw); }
+    #start h1 .what { display: block; font-size: min(7vh, 4.4vw); color: #ffe9a8; white-space: nowrap; }
+    #start .lead { margin: 1vh 0 0; font-size: min(3.4vh, 2.1vw); font-weight: 600; line-height: 1.5; text-shadow: 0 2px 6px rgba(4, 25, 55, .6); }
+    .how { display: grid; gap: 1.4vh; width: 100%; margin-top: 2vh; }
+    .how span { display: flex; align-items: center; justify-content: center; gap: .5em; border-radius: 2.6vh; padding: .7vh 12px 1.1vh;
+      font-weight: 800; font-size: min(3.3vh, 1.85vw); color: #fff; border: 3px solid #fff; box-shadow: 0 6px 14px rgba(4, 25, 55, .35); line-height: 1.5; }
+    .how svg { width: 1.4em; height: 1.4em; flex: none; }
+    .how .c1 { background: linear-gradient(#49c97a, #2ea85c); }
+    .how .c2 { background: linear-gradient(#a879e8, #8a56d8); }
+    #startBtn { font: inherit; font-size: min(5vh, 3.1vw); font-weight: 800; color: #fff; cursor: pointer; margin-top: 3vh;
+      background: linear-gradient(var(--orange-light), var(--orange)); border: 4px solid #fff; border-radius: 999px; padding: .6vh 1.6em 1.3vh;
+      min-height: 48px; text-shadow: 0 2px 0 rgba(160, 70, 0, .45); animation: flash 1.1s ease-in-out infinite; }
     #startBtn:disabled { animation: none; opacity: .55; }
     @keyframes flash {
       0%, 100% { transform: scale(1); box-shadow: 0 6px 0 var(--orange-deep), 0 0 0 0 rgba(255, 255, 255, .95); }
       50% { transform: scale(1.07); box-shadow: 0 6px 0 var(--orange-deep), 0 0 0 16px rgba(255, 255, 255, 0); }
     }
-    #loadMsg { min-height: 1.6em; margin-top: 1.4vh; font-size: 1.05rem; }
-    #start small { margin-top: 1vh; font-size: .95rem; opacity: .9; max-width: 34rem; line-height: 1.6; }
+    #loadMsg { min-height: 1.5em; margin-top: 1.6vh; font-size: min(2.4vh, 1.05rem); }
+    #start small { font-size: min(2.1vh, .95rem); opacity: .92; line-height: 1.5; text-shadow: 0 2px 5px rgba(4, 25, 55, .7); }
+    #start .hero { position: relative; z-index: 1; height: 100%; display: flex; align-items: flex-end; padding-bottom: 3vh; }
+    #start .hero img { height: min(80vh, 62vw); width: auto; filter: drop-shadow(0 18px 22px rgba(4, 25, 55, .55)); animation: bob 3s ease-in-out infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6vh); } }
+    #start .hello { position: absolute; left: 12%; top: 5vh; background: #fff; color: var(--ink); font-weight: 800; font-size: min(3.7vh, 2.3vw);
+      padding: .6vh 1em 1.2vh; border-radius: 4vh; box-shadow: 0 10px 20px rgba(4, 25, 55, .35); white-space: nowrap; }
+    #start .hello::after { content: ""; position: absolute; left: 20%; bottom: -2.4vh; border: 1.3vh solid transparent; border-top-color: #fff; }
+    #start .friends { position: absolute; z-index: 1; right: 3vw; bottom: .4vh; width: min(42vw, 67vh); height: auto;
+      filter: drop-shadow(0 12px 14px rgba(4, 25, 55, .55)); pointer-events: none; }
+    /* narrow or tall screens: one column, the small friends give their room to the start button */
+    @media (max-aspect-ratio: 11/10) {
+      #start { flex-direction: column-reverse; justify-content: center; padding: 2vh 4vw; overflow-y: auto; }
+      #start .panel { width: 100%; padding-bottom: 0; }
+      #start h1 .who { font-size: min(7vh, 13vw); }
+      #start h1 .what { font-size: min(5vh, 8.4vw); }
+      #start .lead, .how span { font-size: min(2.7vh, 4.4vw); }
+      #startBtn { font-size: min(3.8vh, 6.4vw); }
+      #start .hero { height: auto; padding-bottom: 1vh; }
+      #start .hero img { height: 26vh; }
+      #start .hello, #start .friends { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { #start .hero img { animation: none; } }
 
     #problem { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; text-align: center;
       padding: 24px; background: rgba(11, 61, 107, .92); color: #fff; font-size: 1.6rem; font-weight: 700; line-height: 1.8; }
@@ -70,15 +95,22 @@
 <body>
 
 <div id="start">
-  <h1><span class="who">مغامرة قطّورة</span><span class="what">والأبواب الثلاثة</span></h1>
-  <p class="lead">ساعد قطّورة لتجد صديقاتها، واكتشف معها التبخر والتكثف، ثم افتح الباب الأوسط.</p>
-  <div class="how">
-    <span class="c1">👀 حرّك الجهاز أو اسحب بإصبعك لتنظر حولك</span>
-    <span class="c2">👆 اضغط ما يلمع</span>
+  <div class="panel">
+    <h1><span class="who">مغامرة</span><span class="what">قطّورة والأبواب الثلاثة</span></h1>
+    <p class="lead">ساعد قطّورة لتجد صديقاتها، واكتشف التبخر والتكثف.</p>
+    <div class="how">
+      <span class="c1"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="13" y="14" width="22" height="20" rx="3" fill="#fff"/><path d="M4 24l7-6v12zM44 24l-7-6v12z" fill="#fff"/></svg>حرّك الجهاز أو اسحب بإصبعك لتنظر حولك</span>
+      <span class="c2"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4l4.5 13.5L42 22l-13.5 4.5L24 40l-4.5-13.5L6 22l13.5-4.5z" fill="#ffd95a"/></svg>اضغط ما يلمع</span>
+    </div>
+    <button id="startBtn" type="button" disabled>▶ ابدأ المغامرة</button>
+    <div id="loadMsg">جاري تحميل المغامرة…</div>
+    <small>للنظارة: اضغط زر VR أسفل الشاشة بعد البدء، ثم ثبّت نظرك على الشيء لتختاره.</small>
   </div>
-  <button id="startBtn" type="button" disabled>▶ ابدأ المغامرة</button>
-  <div id="loadMsg">جاري تحميل المغامرة…</div>
-  <small>للنظارة: اضغط زر VR أسفل الشاشة بعد البدء، ثم ثبّت نظرك على الشيء لتختاره.</small>
+  <div class="hero">
+    <div class="hello">هيّا نبدأ المغامرة!</div>
+    <img src="ui/qattoura.webp" alt="قطّورة تحمل نظارة الواقع الافتراضي">
+  </div>
+  <img class="friends" src="ui/friends.webp" alt="">
 </div>
 <div id="problem" hidden>تعذّر تحميل المشهد. تأكد من الاتصال بالإنترنت ثم أعد تحميل الصفحة.</div>
 

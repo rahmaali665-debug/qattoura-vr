@@ -1,0 +1,9 @@
+{
+  "font": ["Cairo", "Dubai", "Tahoma"],
+  "height": 384,
+  "items": [
+    { "file": "evaporation-sign", "title": "التبخر", "number": "١", "title_width": 1024 },
+    { "file": "condensation-sign", "title": "التكثف", "number": "٢", "title_width": 1024 },
+    { "file": "compare-sign", "title": "التشابه والاختلاف", "number": "٣", "title_width": 1536 }
+  ]
+}

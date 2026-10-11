@@ -1,0 +1,6 @@
+PLAN.md
+PLAN-REVIEW-LOG.md
+blender/_work/
+*.blend
+*.blend1
+__pycache__/
